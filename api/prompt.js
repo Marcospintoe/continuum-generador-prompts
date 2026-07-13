@@ -1,6 +1,6 @@
-// Función serverless (Vercel) — Genera el prompt con IA SOLO cuando el usuario toca una foto.
-// Requiere variable de entorno: OPENAI_API_KEY.
-// Modelo por defecto: gpt-4o-mini (barato). Recibe POST { query, imageTitle, style }.
+// Función serverless (Vercel) — Genera el prompt con IA (Claude) SOLO cuando el usuario toca una foto.
+// Requiere variable de entorno: ANTHROPIC_API_KEY.
+// Modelo por defecto: claude-haiku-4-5 (barato). Recibe POST { query, imageTitle, style }.
 // Devuelve: { prompt }
 
 module.exports = async (req, res) => {
@@ -15,8 +15,8 @@ module.exports = async (req, res) => {
   const style = (body.style || 'foto publicitaria realista').toString().trim();
   if (!query) { res.status(400).json({ error: 'Falta query' }); return; }
 
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) { res.status(500).json({ error: 'Falta OPENAI_API_KEY' }); return; }
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) { res.status(500).json({ error: 'Falta ANTHROPIC_API_KEY' }); return; }
 
   const system = 'Sos un experto en prompts de imágenes para marketing, al estilo de la agencia Continuum. '
     + 'Respondés SOLO con el prompt, en español, listo para copiar y pegar. '
@@ -27,20 +27,23 @@ module.exports = async (req, res) => {
     + 'Estilo deseado: ' + style + '.';
 
   try {
-    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        temperature: 0.7,
-        max_tokens: 240
+        model: process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5',
+        max_tokens: 300,
+        system: system,
+        messages: [{ role: 'user', content: user }]
       })
     });
     const d = await r.json();
-    if (d.error) { res.status(502).json({ error: d.error.message || 'Error de OpenAI' }); return; }
-    const prompt = d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content
-      ? d.choices[0].message.content.trim() : '';
+    if (d.error) { res.status(502).json({ error: (d.error && d.error.message) || 'Error de Anthropic' }); return; }
+    const prompt = d.content && d.content[0] && d.content[0].text ? d.content[0].text.trim() : '';
     res.status(200).json({ prompt });
   } catch (e) {
     res.status(500).json({ error: 'Fallo al generar el prompt', detail: String(e) });
