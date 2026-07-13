@@ -1,0 +1,7 @@
+{
+  "name": "continuum-generador-prompts",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generador de prompts de Continuum: busca imágenes en Google y genera el prompt con IA al tocar una foto.",
+  "engines": { "node": ">=18" }
+}
