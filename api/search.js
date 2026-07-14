@@ -1,5 +1,5 @@
-// Función serverless (Vercel) — Búsqueda de imágenes con Google Programmable Search.
-// Requiere variables de entorno: GOOGLE_API_KEY y GOOGLE_CX.
+// Función serverless (Vercel) — Búsqueda de imágenes con Pexels (gratis, confiable).
+// Requiere variable de entorno: PEXELS_API_KEY (gratis en https://www.pexels.com/api/).
 // Devuelve: { images: [{ url, thumb, title, source, context }] }
 
 module.exports = async (req, res) => {
@@ -8,29 +8,24 @@ module.exports = async (req, res) => {
   const q = (req.query && req.query.q ? String(req.query.q) : '').trim();
   if (!q) { res.status(400).json({ error: 'Falta el parámetro q' }); return; }
 
-  const key = process.env.GOOGLE_API_KEY;
-  const cx = process.env.GOOGLE_CX;
-  if (!key || !cx) { res.status(500).json({ error: 'Faltan GOOGLE_API_KEY / GOOGLE_CX' }); return; }
+  const key = process.env.PEXELS_API_KEY;
+  if (!key) { res.status(500).json({ error: 'Falta PEXELS_API_KEY' }); return; }
 
-  // searchType=image → solo imágenes. num=10 (máx por request). safe=active.
-  const url = 'https://www.googleapis.com/customsearch/v1?searchType=image&num=10&safe=active'
-            + '&key=' + encodeURIComponent(key)
-            + '&cx=' + encodeURIComponent(cx)
-            + '&q=' + encodeURIComponent(q);
+  const url = 'https://api.pexels.com/v1/search?per_page=15&orientation=portrait&locale=es-ES&query=' + encodeURIComponent(q);
 
   try {
-    const r = await fetch(url);
+    const r = await fetch(url, { headers: { 'Authorization': key } });
     const d = await r.json();
-    if (d.error) { res.status(502).json({ error: d.error.message || 'Error de Google' }); return; }
-    const images = (d.items || []).map(it => ({
-      url: it.link,
-      thumb: it.image ? it.image.thumbnailLink : it.link,
-      title: it.title || q,
-      source: it.displayLink || '',
-      context: it.image ? it.image.contextLink : ''
+    if (d.error) { res.status(502).json({ error: d.error }); return; }
+    const images = (d.photos || []).map(p => ({
+      url: (p.src && (p.src.large || p.src.portrait || p.src.medium)) || '',
+      thumb: (p.src && (p.src.medium || p.src.tiny)) || '',
+      title: p.alt || q,
+      source: 'Pexels',
+      context: p.url || ''
     }));
     res.status(200).json({ images });
   } catch (e) {
-    res.status(500).json({ error: 'Fallo al consultar Google', detail: String(e) });
+    res.status(500).json({ error: 'Fallo al consultar Pexels', detail: String(e) });
   }
 };
