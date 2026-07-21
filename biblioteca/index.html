@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Continuum · Biblioteca de Prompts</title>
+<style>
+  :root{
+    --bg:#0b1120;
+    --bg-2:#0f172a;
+    --panel:#131c31;
+    --panel-2:#182136;
+    --border:#25304a;
+    --text:#e8edf7;
+    --muted:#93a0bd;
+    --accent:#6366f1;
+    --accent-2:#a855f7;
+    --accent-glow:rgba(99,102,241,.35);
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1200px 600px at 70% -10%, #1b2444 0%, transparent 60%), var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  a{color:inherit}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px}
+
+  /* Nav */
+  nav{display:flex;align-items:center;justify-content:space-between;padding:22px 0}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px}
+  .brand .dot{width:22px;height:22px;border-radius:6px;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 0 18px var(--accent-glow)}
+  .nav-links{display:flex;align-items:center;gap:22px;font-size:14px;color:var(--muted)}
+  .nav-links a:hover{color:var(--text)}
+  .nav-add{font-size:13px;font-weight:700;color:#fff;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(120deg,var(--accent),var(--accent-2));box-shadow:0 6px 18px var(--accent-glow)}
+  .nav-add:hover{filter:brightness(1.08)}
+  .badge.mine{background:linear-gradient(120deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff}
+
+  /* Form */
+  .form-modal{max-width:560px;display:block;padding:0}
+  .form-head{padding:22px 26px 0}
+  .form-head h2{margin:0 0 4px;font-size:22px}
+  .form-head p{margin:0;color:var(--muted);font-size:13px}
+  form.addf{padding:20px 26px 24px;display:grid;gap:14px}
+  .fld label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.4px}
+  .fld input,.fld select,.fld textarea{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:14px;font-family:inherit;outline:none}
+  .fld textarea{min-height:96px;resize:vertical;line-height:1.5}
+  .fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:11px;color:var(--muted);opacity:.75;margin-top:4px}
+  .imgprev{margin-top:8px;max-height:120px;border-radius:8px;display:none}
+  .form-actions{display:flex;gap:10px;margin-top:4px}
+  .tools{display:flex;flex-wrap:wrap;gap:8px;padding:0 26px 22px}
+  .tools button{font-size:12px;font-weight:600;padding:9px 13px;border-radius:9px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer}
+  .tools button:hover{border-color:var(--accent)}
+  .tools .sep{flex-basis:100%;height:0}
+  .mine-count{font-size:12px;color:var(--muted);padding:0 26px 6px}
+
+  /* Hero */
+  .hero{text-align:center;padding:46px 0 26px}
+  .kicker{display:inline-block;font-size:12px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent-2);border:1px solid var(--border);padding:6px 14px;border-radius:999px;background:var(--panel)}
+  .hero h1{font-size:clamp(30px,5vw,54px);line-height:1.05;margin:20px 0 12px;font-weight:800;letter-spacing:-1px}
+  .hero h1 span{background:linear-gradient(120deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{color:var(--muted);max-width:620px;margin:0 auto;font-size:17px;line-height:1.6}
+
+  /* Search */
+  .search-row{max-width:640px;margin:30px auto 8px;position:relative}
+  .search-row input{
+    width:100%;padding:16px 18px 16px 48px;border-radius:14px;border:1px solid var(--border);
+    background:var(--panel);color:var(--text);font-size:16px;outline:none;transition:.2s;
+  }
+  .search-row input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow)}
+  .search-row svg{position:absolute;left:16px;top:50%;transform:translateY(-50%);opacity:.6}
+  .count{text-align:center;color:var(--muted);font-size:13px;margin-top:14px}
+
+  /* Filters */
+  .filters{position:sticky;top:0;z-index:20;background:linear-gradient(var(--bg),rgba(11,17,32,.85));backdrop-filter:blur(8px);padding:16px 0;margin-top:10px;border-bottom:1px solid var(--border)}
+  .chips{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .chip{
+    cursor:pointer;user-select:none;font-size:13px;padding:8px 16px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel);color:var(--muted);transition:.15s;white-space:nowrap;
+  }
+  .chip:hover{color:var(--text);border-color:var(--accent)}
+  .chip.active{background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;border-color:transparent;box-shadow:0 6px 18px var(--accent-glow)}
+  .chip .n{opacity:.7;margin-left:6px;font-size:11px}
+  .type-row{margin-bottom:12px}
+
+  /* Grid (masonry via columns) */
+  .grid{columns:4 260px;column-gap:20px;padding:28px 0 40px}
+  .card{
+    break-inside:avoid;margin-bottom:20px;background:var(--panel);border:1px solid var(--border);
+    border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:.18s;position:relative;
+  }
+  .card:hover{transform:translateY(-4px);border-color:var(--accent);box-shadow:0 14px 40px rgba(0,0,0,.45)}
+  .card .thumb{position:relative;display:block;width:100%;background:var(--panel-2)}
+  .card .thumb img{width:100%;display:block}
+  .badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(11,17,32,.78);backdrop-filter:blur(6px);border:1px solid var(--border);display:flex;align-items:center;gap:5px}
+  .card-body{padding:14px 15px 16px}
+  .card-cat{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--accent-2);font-weight:600}
+  .card-title{font-size:15px;font-weight:700;margin:5px 0 8px}
+  .card-prompt{font-size:13px;line-height:1.5;color:var(--muted);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+  .model{font-size:11px;color:var(--muted);opacity:.8}
+  .copy-btn{font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;transition:.15s}
+  .copy-btn:hover{border-color:var(--accent);color:#fff}
+  .copy-btn.done{background:var(--accent);border-color:transparent;color:#fff}
+
+  .empty{text-align:center;color:var(--muted);padding:60px 0}
+
+  /* Modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(5,8,17,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--bg-2);border:1px solid var(--border);border-radius:20px;max-width:860px;width:100%;max-height:88vh;overflow:auto;display:grid;grid-template-columns:1fr 1fr}
+  .modal img{width:100%;height:100%;object-fit:cover;display:block}
+  .modal-side{padding:26px}
+  .modal .card-cat{margin-bottom:6px}
+  .modal h2{margin:0 0 14px;font-size:22px}
+  .prompt-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap}
+  .meta-line{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0}
+  .tag{font-size:11px;padding:5px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--border);color:var(--muted)}
+  .modal-actions{display:flex;gap:10px;margin-top:18px}
+  .btn-primary{flex:1;padding:12px;border-radius:11px;border:none;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;font-weight:700;font-size:14px;cursor:pointer}
+  .btn-ghost{padding:12px 16px;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-size:14px}
+  .modal-close{position:sticky;top:0;float:right;margin:10px;background:rgba(11,17,32,.7);border:1px solid var(--border);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;z-index:2}
+  .modal-note{font-size:12px;color:var(--muted);margin-top:14px;opacity:.75}
+
+  /* CTA */
+  .cta{margin:20px 0 60px;text-align:center;border:1px solid var(--border);border-radius:24px;padding:48px 24px;background:radial-gradient(600px 300px at 50% 0%, rgba(99,102,241,.16), transparent 70%),var(--panel)}
+  .cta h2{font-size:clamp(24px,3.5vw,36px);margin:0 0 10px;letter-spacing:-.5px}
+  .cta p{color:var(--muted);max-width:520px;margin:0 auto 22px}
+  .cta a{display:inline-block;padding:14px 28px;border-radius:12px;background:linear-gradient(120deg,var(--accent),var(--accent-2));color:#fff;font-weight:700;text-decoration:none;box-shadow:0 10px 30px var(--accent-glow)}
+  footer{border-top:1px solid var(--border);padding:26px 0;text-align:center;color:var(--muted);font-size:13px}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);opacity:0;background:var(--accent);color:#fff;padding:12px 20px;border-radius:12px;font-weight:600;font-size:14px;z-index:200;transition:.25s;box-shadow:0 10px 30px var(--accent-glow)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media(max-width:640px){
+    .modal{grid-template-columns:1fr}
+    .nav-links{display:none}
+    .grid{columns:2 150px;column-gap:14px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <div class="brand"><span class="dot"></span> Continuum</div>
+    <div class="nav-links">
+      <a href="#library">Biblioteca</a>
+      <a href="https://trycontinuum.ai/technology/" target="_blank">Tecnología</a>
+      <a href="https://trycontinuum.ai/social-plus" target="_blank">Social+</a>
+      <button class="nav-add" id="openAdd">＋ Agregar prompt</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <span class="kicker">El Sistema Operativo Creativo</span>
+    <h1>Biblioteca de <span>Prompts</span> de Continuum</h1>
+    <p>Cientos de prompts listos para usar de imagen, video y texto — creados por Continuum para que hagas contenido de marca a escala. ¿Nuevo en esto? Un prompt es la instrucción que le das a la IA.</p>
+    <div class="search-row">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="text" placeholder="Buscá prompts, tags o categorías…" autocomplete="off">
+    </div>
+    <div class="count" id="count"></div>
+  </header>
+</div>
+
+<div class="filters" id="library">
+  <div class="wrap">
+    <div class="chips type-row" id="typeChips"></div>
+    <div class="chips" id="catChips"></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none">No hay prompts que coincidan. Probá con otra palabra.</div>
+
+  <section class="cta">
+    <h2>¿Querés que Continuum lo haga por vos, a escala?</h2>
+    <p>Esto es solo el punto de partida. Continuum conecta tus datos, tu marca y tu pauta en un solo motor creativo de alto rendimiento.</p>
+    <a href="https://trycontinuum.ai/" target="_blank">Agendá una demo</a>
+  </section>
+</div>
+
+<footer>© <span id="yr"></span> Continuum Agency Inc. · Biblioteca de Prompts · Hecho con amor en Palo Alto, CA.</footer>
+
+<!-- Modal -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal">
+    <button class="modal-close" id="modalClose">×</button>
+    <img id="mImg" alt="">
+    <div class="modal-side">
+      <div class="card-cat" id="mCat"></div>
+      <h2 id="mTitle"></h2>
+      <div class="prompt-box" id="mPrompt"></div>
+      <div class="meta-line" id="mTags"></div>
+      <div class="model" id="mModel"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="mCopy">Copiar prompt</button>
+        <button class="btn-ghost" id="mClose2">Cerrar</button>
+      </div>
+      <div class="modal-note">Tip: cambiá las {LLAVES} como {PRODUCTO}, {AUDIENCIA} o {COLOR} por tus propios datos antes de generar.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Add prompt modal -->
+<div class="modal-bg" id="addBg">
+  <div class="modal form-modal">
+    <button class="modal-close" id="addClose">×</button>
+    <div class="form-head">
+      <h2>Agregar un prompt</h2>
+      <p>Se guarda en tu navegador. Usá Exportar para hacerlo permanente o compartirlo.</p>
+    </div>
+    <form class="addf" id="addForm">
+      <div class="fld-row">
+        <div class="fld">
+          <label>Tipo</label>
+          <select id="fType">
+            <option value="image">🖼️ Imagen</option>
+            <option value="video">🎬 Video</option>
+            <option value="text">✍️ Texto</option>
+          </select>
+        </div>
+        <div class="fld">
+          <label>Categoría</label>
+          <select id="fCat"></select>
+        </div>
+      </div>
+      <div class="fld">
+        <label>Título</label>
+        <input id="fTitle" placeholder="ej. Oferta Flash con Cuenta Regresiva" required>
+      </div>
+      <div class="fld">
+        <label>Prompt</label>
+        <textarea id="fPrompt" placeholder="Escribí el prompt. Usá {LLAVES} como {PRODUCTO}, {DESCUENTO}, {CODIGO} para las partes que se cambian." required></textarea>
+      </div>
+      <div class="fld-row">
+        <div class="fld">
+          <label>Modelo sugerido</label>
+          <input id="fModel" placeholder="Midjourney v6 / GPT-4o…">
+        </div>
+        <div class="fld">
+          <label>Tags (separados por coma)</label>
+          <input id="fTags" placeholder="promo, editable, oferta">
+        </div>
+      </div>
+      <div class="fld">
+        <label>Imagen</label>
+        <input id="fImgUrl" placeholder="Pegá una URL de imagen, o subí una abajo">
+        <input id="fImgFile" type="file" accept="image/*" style="margin-top:8px">
+        <div class="hint">Opcional. Las imágenes que subís se guardan dentro de esta página.</div>
+        <img id="fImgPrev" class="imgprev" alt="vista previa">
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="btn-primary">Agregar prompt</button>
+        <button type="button" class="btn-ghost" id="addCancel">Cancelar</button>
+      </div>
+    </form>
+    <div class="mine-count" id="mineCount"></div>
+    <div class="tools">
+      <button type="button" id="expJs">⬇ Exportar prompts.js</button>
+      <button type="button" id="expJson">⬇ Exportar JSON</button>
+      <button type="button" id="impBtn">⬆ Importar JSON</button>
+      <input id="impFile" type="file" accept=".json,application/json" style="display:none">
+      <span class="sep"></span>
+      <button type="button" id="clearMine">🗑 Borrar mis prompts agregados</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Copiado ✓</div>
+
+<script src="prompts.js"></script>
+<script>
+(function(){
+  var DATA = (window.PROMPTS_DATA && window.PROMPTS_DATA.prompts) ? window.PROMPTS_DATA : {prompts:[],meta:{categories:[],types:[]}};
+  var basePrompts = DATA.prompts || [];
+  var baseCats = (DATA.meta && DATA.meta.categories) || [];
+  var LS_KEY = 'continuum_user_prompts_v1';
+  var typeMeta = {
+    image:{label:"Imagen", icon:"🖼️"},
+    video:{label:"Video", icon:"🎬"},
+    text:{label:"Texto", icon:"✍️"}
+  };
+  var state = {q:"", type:"all", cat:"all"};
+
+  function loadMine(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||[]}catch(e){return []} }
+  function saveMine(arr){ try{localStorage.setItem(LS_KEY, JSON.stringify(arr))}catch(e){alert('Could not save (storage full or blocked).')} }
+  var mine = loadMine();
+  function allPrompts(){ return mine.concat(basePrompts); }
+  function allCats(){
+    var set = {}; baseCats.forEach(function(c){set[c]=1});
+    allPrompts().forEach(function(p){set[p.category]=1});
+    return Object.keys(set);
+  }
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  var typeChips = document.getElementById('typeChips');
+  var catChips = document.getElementById('catChips');
+
+  function buildChips(){
+    var prompts = allPrompts();
+    // type chips
+    typeChips.innerHTML='';
+    ["all"].concat(Object.keys(typeMeta)).forEach(function(t){
+      var n = t==="all" ? prompts.length : prompts.filter(function(p){return p.type===t}).length;
+      var c = document.createElement('div');
+      c.className='chip'+(state.type===t?' active':'');
+      c.innerHTML = (t==="all"?"Todos":(typeMeta[t].icon+" "+typeMeta[t].label))+' <span class="n">'+n+'</span>';
+      c.addEventListener('click',function(){state.type=t;buildChips();render();});
+      typeChips.appendChild(c);
+    });
+    // category chips
+    catChips.innerHTML='';
+    ["all"].concat(allCats()).forEach(function(cat){
+      var n = cat==="all" ? prompts.length : prompts.filter(function(p){return p.category===cat}).length;
+      if(cat!=="all" && n===0) return;
+      var c = document.createElement('div');
+      c.className='chip'+(state.cat===cat?' active':'');
+      c.innerHTML = (cat==="all"?"Todas las categorías":cat)+' <span class="n">'+n+'</span>';
+      c.addEventListener('click',function(){state.cat=cat;buildChips();render();});
+      catChips.appendChild(c);
+    });
+  }
+
+  document.getElementById('search').addEventListener('input',function(e){
+    state.q = e.target.value.toLowerCase().trim();
+    render();
+  });
+
+  function match(p){
+    if(state.type!=="all" && p.type!==state.type) return false;
+    if(state.cat!=="all" && p.category!==state.cat) return false;
+    if(state.q){
+      var hay = (p.title+" "+p.prompt+" "+p.category+" "+(p.tags||[]).join(" ")+" "+(p.model||"")).toLowerCase();
+      if(hay.indexOf(state.q)===-1) return false;
+    }
+    return true;
+  }
+
+  var grid = document.getElementById('grid');
+  var empty = document.getElementById('empty');
+  var count = document.getElementById('count');
+
+  function render(){
+    var prompts = allPrompts();
+    var list = prompts.filter(match);
+    grid.innerHTML='';
+    empty.style.display = list.length? 'none':'block';
+    count.textContent = list.length+' de '+prompts.length+' prompts';
+    list.forEach(function(p){
+      var tm = typeMeta[p.type]||{label:p.type,icon:"•"};
+      var card = document.createElement('div');
+      card.className='card';
+      var img = p.image ? '<img loading="lazy" src="'+p.image+'" alt="'+esc(p.title)+'">'
+                        : '<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:34px">'+tm.icon+'</div>';
+      card.innerHTML =
+        '<div class="thumb"><span class="badge'+(p.mine?' mine':'')+'">'+tm.icon+' '+tm.label+(p.mine?' · mío':'')+'</span>'+
+          img+'</div>'+
+        '<div class="card-body">'+
+          '<div class="card-cat">'+esc(p.category)+'</div>'+
+          '<div class="card-title">'+esc(p.title)+'</div>'+
+          '<div class="card-prompt">'+esc(p.prompt)+'</div>'+
+          '<div class="card-foot"><span class="model">'+esc(p.model||'')+'</span>'+
+            '<button class="copy-btn">Copiar</button></div>'+
+        '</div>';
+      card.querySelector('.copy-btn').addEventListener('click',function(ev){
+        ev.stopPropagation();
+        copy(p.prompt); var b=ev.target; b.textContent='Copiado ✓'; b.classList.add('done');
+        setTimeout(function(){b.textContent='Copiar';b.classList.remove('done')},1400);
+      });
+      card.addEventListener('click',function(){openModal(p)});
+      grid.appendChild(card);
+    });
+  }
+
+  // Modal
+  var modalBg=document.getElementById('modalBg');
+  function openModal(p){
+    var tm=typeMeta[p.type]||{label:p.type};
+    var mi=document.getElementById('mImg');
+    if(p.image){mi.style.display='';mi.src=p.image;} else {mi.style.display='none';}
+    document.getElementById('mCat').textContent=p.category+' · '+tm.label;
+    document.getElementById('mTitle').textContent=p.title;
+    document.getElementById('mPrompt').textContent=p.prompt;
+    document.getElementById('mModel').textContent=p.model? 'Modelo sugerido: '+p.model : '';
+    var tagWrap=document.getElementById('mTags'); tagWrap.innerHTML='';
+    (p.tags||[]).forEach(function(t){var s=document.createElement('span');s.className='tag';s.textContent='#'+t;tagWrap.appendChild(s)});
+    document.getElementById('mCopy').onclick=function(){copy(p.prompt);toast()};
+    modalBg.classList.add('open');
+  }
+  function closeModal(){modalBg.classList.remove('open')}
+  document.getElementById('modalClose').addEventListener('click',closeModal);
+  document.getElementById('mClose2').addEventListener('click',closeModal);
+  modalBg.addEventListener('click',function(e){if(e.target===modalBg)closeModal()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeModal()});
+
+  // Clipboard + toast
+  function copy(text){
+    if(navigator.clipboard && navigator.clipboard.writeText){navigator.clipboard.writeText(text).catch(fallbackCopy.bind(null,text))}
+    else fallbackCopy(text);
+  }
+  function fallbackCopy(text){
+    var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch(e){}document.body.removeChild(ta);
+  }
+  var toastEl=document.getElementById('toast');var toastT;
+  function toast(msg){toastEl.textContent=msg||'Copied to clipboard ✓';toastEl.classList.add('show');clearTimeout(toastT);toastT=setTimeout(function(){toastEl.classList.remove('show')},1600)}
+
+  function esc(s){return (s||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+
+  /* ---------- Add prompt / admin ---------- */
+  var addBg=document.getElementById('addBg');
+  var fCat=document.getElementById('fCat');
+  var fImgPrev=document.getElementById('fImgPrev');
+  var uploadedDataUrl='';
+
+  function fillCatSelect(){
+    fCat.innerHTML='';
+    allCats().forEach(function(c){var o=document.createElement('option');o.value=c;o.textContent=c;fCat.appendChild(o)});
+    var o=document.createElement('option');o.value='__new';o.textContent='+ Nueva categoría…';fCat.appendChild(o);
+  }
+  fCat.addEventListener('change',function(){
+    if(fCat.value==='__new'){
+      var name=prompt('Nombre de la nueva categoría:');
+      if(name){ var o=document.createElement('option');o.value=name;o.textContent=name;fCat.insertBefore(o,fCat.lastChild);fCat.value=name; }
+      else fCat.selectedIndex=0;
+    }
+  });
+
+  function updateMineCount(){
+    document.getElementById('mineCount').textContent = mine.length? ('Agregaste '+mine.length+' prompt'+(mine.length>1?'s':'')+' (guardados en este navegador).') : 'Todavía no agregaste prompts.';
+  }
+
+  function openAdd(){ fillCatSelect(); updateMineCount(); addBg.classList.add('open'); }
+  function closeAdd(){ addBg.classList.remove('open'); }
+  document.getElementById('openAdd').addEventListener('click',openAdd);
+  document.getElementById('addClose').addEventListener('click',closeAdd);
+  document.getElementById('addCancel').addEventListener('click',closeAdd);
+  addBg.addEventListener('click',function(e){if(e.target===addBg)closeAdd()});
+
+  document.getElementById('fImgFile').addEventListener('change',function(e){
+    var file=e.target.files[0]; if(!file) return;
+    var r=new FileReader();
+    r.onload=function(){ uploadedDataUrl=r.result; fImgPrev.src=r.result; fImgPrev.style.display='block'; };
+    r.readAsDataURL(file);
+  });
+  document.getElementById('fImgUrl').addEventListener('input',function(e){
+    if(e.target.value){ uploadedDataUrl=''; fImgPrev.src=e.target.value; fImgPrev.style.display='block'; }
+    else if(!uploadedDataUrl){ fImgPrev.style.display='none'; }
+  });
+
+  document.getElementById('addForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    var img = uploadedDataUrl || document.getElementById('fImgUrl').value.trim();
+    var p = {
+      id:'mine_'+Date.now(),
+      mine:true,
+      type:document.getElementById('fType').value,
+      category:fCat.value==='__new'?'Sin categoría':fCat.value,
+      title:document.getElementById('fTitle').value.trim(),
+      prompt:document.getElementById('fPrompt').value.trim(),
+      model:document.getElementById('fModel').value.trim(),
+      image:img,
+      tags:document.getElementById('fTags').value.split(',').map(function(t){return t.trim()}).filter(Boolean)
+    };
+    mine.unshift(p); saveMine(mine);
+    e.target.reset(); uploadedDataUrl=''; fImgPrev.style.display='none';
+    buildChips(); render(); updateMineCount();
+    toast('Prompt agregado ✓');
+    closeAdd();
+  });
+
+  /* Export / import */
+  function download(filename, text){
+    var blob=new Blob([text],{type:'text/plain'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  function fullData(){
+    return { meta: DATA.meta, prompts: allPrompts().map(function(p){var q={};for(var k in p){if(k!=='mine')q[k]=p[k]} return q;}) };
+  }
+  document.getElementById('expJs').addEventListener('click',function(){
+    download('prompts.js','window.PROMPTS_DATA = '+JSON.stringify(fullData(),null,2)+';\n');
+  });
+  document.getElementById('expJson').addEventListener('click',function(){
+    download('prompts.json', JSON.stringify(fullData(),null,2));
+  });
+  document.getElementById('impBtn').addEventListener('click',function(){document.getElementById('impFile').click()});
+  document.getElementById('impFile').addEventListener('change',function(e){
+    var file=e.target.files[0]; if(!file) return;
+    var r=new FileReader();
+    r.onload=function(){
+      try{
+        var d=JSON.parse(r.result);
+        var arr=Array.isArray(d)?d:(d.prompts||[]);
+        arr.forEach(function(p){p.mine=true; if(!p.id) p.id='mine_'+Date.now()+Math.random();});
+        mine=arr.concat(mine); saveMine(mine);
+        buildChips(); render(); updateMineCount(); toast('Importados '+arr.length+' prompts ✓');
+      }catch(err){alert('Archivo JSON inválido.')}
+    };
+    r.readAsText(file);
+  });
+  document.getElementById('clearMine').addEventListener('click',function(){
+    if(mine.length && confirm('¿Borrar los '+mine.length+' prompts que agregaste? Solo afecta este navegador.')){
+      mine=[]; saveMine(mine); buildChips(); render(); updateMineCount(); toast('Borrados ✓');
+    }
+  });
+
+  buildChips();
+  render();
+})();
+</script>
+</body>
+</html>
